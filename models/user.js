@@ -10,6 +10,7 @@ const UserSchema = new Schema({
   address: {
     type: [AddressSchema],
   },
+  appleId: { type: String },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

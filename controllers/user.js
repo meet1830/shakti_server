@@ -1,5 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.js";
+import appleSignin from "apple-signin-auth";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
@@ -9,13 +10,13 @@ const generateTokens = (id) => {
   const accessToken = jwt.sign(
     { id, type: "access" },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "2h" }
+    { expiresIn: "2h" },
   );
 
   const refreshToken = jwt.sign(
     { id, type: "refresh" },
     process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "30d" }
+    { expiresIn: "30d" },
   );
 
   return { accessToken, refreshToken };
@@ -41,16 +42,32 @@ async function verifyGoogleToken(idToken) {
   }
 }
 
+async function verifyAppleToken(identityToken) {
+  try {
+    const decoded = await appleSignin.verifyIdToken(identityToken, {
+      audience: process.env.APPLE_CLIENT_ID,
+      ignoreExpiration: true,
+    });
+    return decoded;
+  } catch (error) {
+    throw new Error("Invalid Apple token");
+  }
+}
+
 const loginOrSignup = async (req, res) => {
   try {
-    const { idToken, authType } = req.body;
+    const { idToken, authType, email, fullname } = req.body;
 
     if (!idToken || !authType) {
       return res.status(400).json({ error: "Invalid params" });
     }
 
     let authUser;
-    if (authType === "google") authUser = await verifyGoogleToken(idToken);
+    if (authType === "google") {
+      authUser = await verifyGoogleToken(idToken);
+    } else if (authType === "apple") {
+      authUser = await verifyAppleToken(idToken);
+    }
 
     if (!authUser) {
       return res.status(404).json({
@@ -58,16 +75,33 @@ const loginOrSignup = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ email: authUser.email });
+    let user;
+    if (authType === "google") {
+      user = await User.findOne({ email: authUser.email });
 
-    if (!user) {
-      user = new User({
-        email: authUser.email,
-        name: authUser.name,
-      });
-    } else {
-      user.name = authUser.name;
-      user.email = authUser.email;
+      if (!user) {
+        user = new User({
+          email: authUser.email,
+          name: authUser.name,
+        });
+      } else {
+        user.name = authUser.name;
+        user.email = authUser.email;
+      }
+    } else if (authType === "apple") {
+      const { sub } = authUser;
+
+      const findUser = await User.findOne({ appleId: sub });
+
+      if (!findUser) {
+        user = new User({
+          email,
+          name: fullname,
+          appleId: sub,
+        });
+      } else {
+        user = findUser;
+      }
     }
 
     const { accessToken, refreshToken } = generateTokens(user?._id);
@@ -107,7 +141,7 @@ async function refreshAccessToken(req, res) {
           const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
             { $set: { [refreshToken]: "" } },
-            { new: true }
+            { new: true },
           );
           console.log("test delete ", updatedUser);
           return res
@@ -124,7 +158,7 @@ async function refreshAccessToken(req, res) {
         const updatedUser = await User.findByIdAndUpdate(
           req.params.id,
           { $set: { [refreshToken]: refreshToken } },
-          { new: true }
+          { new: true },
         );
         console.log("test updated", updatedUser);
 
@@ -132,7 +166,7 @@ async function refreshAccessToken(req, res) {
           accessToken,
           refreshToken,
         });
-      }
+      },
     );
     res.status(500).json("Something went wrong");
   } catch (error) {
@@ -155,7 +189,7 @@ async function updateUser(req, res) {
     await User.updateOne(
       { email: req.user.id },
       { $set: req.body },
-      { new: false }
+      { new: false },
     );
 
     res.status(200).json({
