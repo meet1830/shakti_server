@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// "postinstall": "node seedScript",
+
 async function seedDatabase() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
