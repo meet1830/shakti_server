@@ -19,11 +19,11 @@ async function seedDatabase() {
     const categoryMap = categoryDocs.reduce((map, category) => {
       map[category.name] = category._id;
       return map;
-    });
+    }, {});
 
     const productWithCategoryIds = productData.map((product) => ({
       ...product,
-      category: categoryMap[product.category],
+      category: [categoryMap[product.category]],
     }));
 
     await Product.insertMany(productWithCategoryIds);

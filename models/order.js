@@ -1,11 +1,17 @@
 import mongoose, { Schema } from "mongoose";
 
-const ItemSchema = new Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
-  },
+import AddressSchema from "./userAddress.js";
+
+const OrderItemSchema = new Schema({
+  name: { type: String, required: true },
+  image_uris: [{ type: String }],
+  price: { type: Number, required: true },
+  original_price: { type: Number },
+  weight: { type: String, required: true },
+  description: { type: String },
+  category: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
   quantity: { type: Number, required: true },
 });
 
@@ -15,21 +21,19 @@ const OrderSchema = new Schema({
     ref: "User",
     required: true,
   },
-  deliveryDate: { type: Date, required: true },
-  address: { type: String },
-  items: { type: [ItemSchema], required: true },
+  items: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+  ],
+  orderItems: { type: [OrderItemSchema], required: true },
+  address: { type: AddressSchema, required: true },
+  phone: { type: String, required: true },
   status: {
     type: String,
-    enum: [
-      "Order placed",
-      "Shipping",
-      "Out for delivery",
-      "Delivered",
-      "Cancelled",
-    ],
+    enum: ["Order placed", "Delivered", "Cancelled"],
     default: "Order placed",
     required: true,
   },
+  orderPrice: {type: Number, required: true},
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

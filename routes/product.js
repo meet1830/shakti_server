@@ -1,8 +1,14 @@
+import {
+  getAllProducts,
+  getProductsByCategoryId,
+} from "../controllers/product.js";
+
 import express from "express";
-import { getProductsByCategoryId } from "../controllers/product.js";
+import { verifyAccessToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.get("/:categoryId", getProductsByCategoryId);
+router.get("/", verifyAccessToken, getAllProducts);
+router.get("/:categoryId", verifyAccessToken, getProductsByCategoryId);
 
 export default router;

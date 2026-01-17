@@ -2,8 +2,10 @@ import mongoose, { Schema } from "mongoose";
 
 const ProductSchema = new Schema({
   name: { type: String, required: true },
-  image_uri: { type: String },
+  image_uris: [{ type: String }],
   price: { type: Number, required: true },
+  original_price: { type: Number },
+  weight: { type: String, required: true },
   description: { type: String },
   category: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
   createdAt: { type: Date, default: Date.now },

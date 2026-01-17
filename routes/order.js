@@ -1,9 +1,11 @@
-import { createOrder, getOrdersByUserId } from "../controllers/order.js";
+import { createOrder, getOrders } from "../controllers/order.js";
 
 import express from "express";
+import { verifyAccessToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
-router.post("/", createOrder);
-router.get("/:userId", getOrdersByUserId);
+router.post("/", verifyAccessToken, createOrder);
+router.get("/", verifyAccessToken, getOrders);
+
 export default router;
