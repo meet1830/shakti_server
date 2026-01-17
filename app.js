@@ -2,6 +2,7 @@ import { PORT } from "./config/config.js";
 import { buildAdminJS } from "./config/setup.js";
 import categoryRoutes from "./routes/category.js";
 import connectDB from "./config/connect.js";
+import constantRoutes from "./routes/constant.js";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
@@ -18,7 +19,7 @@ app.use(
     // origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
     origin: "http://localhost:2000",
     credentials: true,
-  })
+  }),
 );
 
 // Rate limiting
@@ -38,12 +39,13 @@ app.use("/user", userRoutes);
 app.use("/category", categoryRoutes);
 app.use("/product", productRoutes);
 app.use("/order", orderRoutes);
+app.use("/constants", constantRoutes);
 
 // for admin js
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval';"
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
   );
   next();
 });
