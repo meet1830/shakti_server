@@ -92,8 +92,10 @@ const loginOrSignup = async (req, res) => {
       const { sub } = authUser;
 
       let findUser;
-      if (email) findUser = await User.findOne({ email });
-      else findUser = await User.findOne({ appleId: sub });
+      if (email) {
+        findUser = await User.findOne({ email });
+        if (!findUser) findUser = await User.findOne({ appleId: sub });
+      } else findUser = await User.findOne({ appleId: sub });
 
       if (!findUser) {
         user = new User({
