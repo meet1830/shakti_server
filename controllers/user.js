@@ -91,7 +91,9 @@ const loginOrSignup = async (req, res) => {
     } else if (authType === "apple") {
       const { sub } = authUser;
 
-      const findUser = await User.findOne({ appleId: sub });
+      let findUser;
+      if (email) findUser = await User.findOne({ email });
+      else findUser = await User.findOne({ appleId: sub });
 
       if (!findUser) {
         user = new User({
