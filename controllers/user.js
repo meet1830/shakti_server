@@ -102,6 +102,7 @@ const loginOrSignup = async (req, res) => {
           appleId: sub,
         });
       } else {
+        findUser.appleId = sub;
         user = findUser;
       }
     }
