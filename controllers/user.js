@@ -193,10 +193,10 @@ async function logout(req, res) {
 
 async function updateUser(req, res) {
   try {
-    await User.updateOne(
-      { email: req.user.id },
+    await User.findByIdAndUpdate(
+      req.user.id,
       { $set: req.body },
-      { new: false },
+      { new: false, runValidators: true },
     );
 
     res.status(200).json({
