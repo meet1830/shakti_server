@@ -71,7 +71,9 @@ const start = async () => {
       if (err) {
         console.log(err);
       } else {
-        initKeepAliveCron();
+        if (process.env.NODE_ENV === "production") {
+          initKeepAliveCron();
+        }
 
         console.log(`Server started on http://localhost:${PORT}`);
         // console.log(`Server started on http://localhost:${PORT}/admin`);

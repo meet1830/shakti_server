@@ -142,38 +142,40 @@ async function refreshAccessToken(req, res) {
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET,
       async (err, decoded) => {
-        if (err) {
-          const updatedUser = await User.findByIdAndUpdate(
-            req.params.id,
-            { $set: { [refreshToken]: "" } },
-            { new: true },
+        try {
+          if (err) {
+            await User.findByIdAndUpdate(
+              userId,
+              { $set: { [refreshToken]: "" } },
+              { new: false },
+            );
+
+            return res
+              .status(403)
+              .json({ error: "Invalid or expired refresh token" });
+          }
+
+          if (decoded.type !== "refresh") {
+            return res.status(403).json({ error: "Invalid token type" });
+          }
+
+          const { accessToken, refreshToken } = generateTokens(userId);
+
+          await User.findByIdAndUpdate(
+            userId,
+            { $set: { [refreshToken]: refreshToken } },
+            { new: false },
           );
-          console.log("test delete ", updatedUser);
-          return res
-            .status(403)
-            .json({ error: "Invalid or expired refresh token" });
+
+          res.status(200).json({
+            accessToken,
+            refreshToken,
+          });
+        } catch (error) {
+          res.status(500).json({ error: error.message });
         }
-
-        if (decoded.type !== "refresh") {
-          return res.status(403).json({ error: "Invalid token type" });
-        }
-
-        const { accessToken, refreshToken } = generateTokens(decoded.id);
-
-        const updatedUser = await User.findByIdAndUpdate(
-          req.params.id,
-          { $set: { [refreshToken]: refreshToken } },
-          { new: true },
-        );
-        console.log("test updated", updatedUser);
-
-        res.status(200).json({
-          accessToken,
-          refreshToken,
-        });
       },
     );
-    res.status(500).json("Something went wrong");
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
