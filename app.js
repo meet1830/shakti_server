@@ -7,7 +7,6 @@ import cors from "cors";
 import express from "express";
 import healthRoutes from "./routes/health.js";
 import helmet from "helmet";
-import { initKeepAliveCron } from "./utils/cron.js";
 import orderRoutes from "./routes/order.js";
 import productRoutes from "./routes/product.js";
 import rateLimit from "express-rate-limit";
@@ -71,10 +70,6 @@ const start = async () => {
       if (err) {
         console.log(err);
       } else {
-        if (process.env.NODE_ENV === "production") {
-          initKeepAliveCron();
-        }
-
         console.log(`Server started on http://localhost:${PORT}`);
         // console.log(`Server started on http://localhost:${PORT}/admin`);
       }
