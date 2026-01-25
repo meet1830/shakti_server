@@ -1,3 +1,4 @@
+import { Logger } from "../utils/logger.js";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.js";
 import appleSignin from "apple-signin-auth";
@@ -26,19 +27,31 @@ const googleClient = new OAuth2Client({
   clientId: process.env.GOOGLE_CLIENT_ID,
 });
 async function verifyGoogleToken(idToken) {
+  const logging = {};
+
   try {
+    logging.started = true;
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
+
+    logging.ticket = ticket;
+
     const payload = ticket.getPayload();
+
+    logging.payload = payload;
+
     return {
       email: payload.email,
       name: payload.name,
       id: payload.sub,
     };
   } catch (error) {
-    throw new Error("Invalid Google token");
+    logging.error = error;
+    throw new Error(`Invalid Google token ${JSON.stringify(error)}`);
+  } finally {
+    Logger.debug('verifyGoogleToken', logging);
   }
 }
 
@@ -55,8 +68,10 @@ async function verifyAppleToken(identityToken) {
 }
 
 const loginOrSignup = async (req, res) => {
+  const logging = {};
   try {
     const { idToken, authType, email, fullname } = req.body;
+    logging.reqParams = req.body;
 
     if (!idToken || !authType) {
       return res.status(400).json({ error: "Invalid params" });
@@ -68,6 +83,8 @@ const loginOrSignup = async (req, res) => {
     } else if (authType === "apple") {
       authUser = await verifyAppleToken(idToken);
     }
+
+    logging.authUser = authUser;
 
     if (!authUser) {
       return res.status(404).json({
@@ -97,6 +114,8 @@ const loginOrSignup = async (req, res) => {
         if (!findUser) findUser = await User.findOne({ appleId: sub });
       } else findUser = await User.findOne({ appleId: sub });
 
+      logging.findUser = findUser;
+
       if (!findUser) {
         user = new User({
           email,
@@ -109,11 +128,18 @@ const loginOrSignup = async (req, res) => {
       }
     }
 
+    logging.user = user;
+
     const { accessToken, refreshToken } = generateTokens(user?._id);
 
     user.refreshToken = refreshToken;
 
-    await user.save();
+    logging.accessToken = accessToken;
+    logging.refreshToken = refreshToken;
+
+    const savedUser = await user.save();
+
+    logging.savedUser = savedUser;
 
     res.status(200).json({
       user,
@@ -122,6 +148,9 @@ const loginOrSignup = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+    logging.error = error;
+  } finally {
+    Logger.debug('loginOrSignup', logging);
   }
 };
 
