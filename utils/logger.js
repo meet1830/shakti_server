@@ -1,12 +1,12 @@
-import dotenv from "dotenv";
-
-dotenv.config();
+import { getConfig } from "../config/config.js";
 
 /**
  * Internal function to send the payload to New Relic
  */
 const sendLog = async (level, message, attributes) => {
-  console.log(`[NR-${level}]`, message, attributes || "");
+  if (getConfig.NODE_ENV === "development") {
+    console.log(`[NR-${level}]`, message, attributes || "");
+  }
 
   const payload = {
     timestamp: Date.now(),
@@ -21,7 +21,7 @@ const sendLog = async (level, message, attributes) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-License-Key": process.env.NEW_RELIC_LICENSE_KEY || "",
+        "X-License-Key": getConfig.NEW_RELIC_LICENSE_KEY,
       },
       body: JSON.stringify(payload),
     });

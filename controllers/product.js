@@ -1,10 +1,14 @@
+import { Logger } from "../utils/logger.js";
 import Product from "../models/product.js";
 import mongoose from "mongoose";
 
 const getAllProducts = async (req, res) => {
+  const logger = {};
   try {
+    logger.started = true;
     const products = await Product.find();
 
+    logger.productsExist = Boolean(products?.length);
     if (!products || !products.length) {
       return res.status(404).json({
         success: false,
@@ -17,11 +21,14 @@ const getAllProducts = async (req, res) => {
       products,
     });
   } catch (error) {
+    logger.error = error;
     res.status(500).json({
       success: false,
       message: "Failed to retrieve products",
       error: error.message,
     });
+  } finally {
+    Logger.debug("getAllProducts", logger);
   }
 };
 

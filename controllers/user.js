@@ -2,21 +2,19 @@ import { Logger } from "../utils/logger.js";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.js";
 import appleSignin from "apple-signin-auth";
-import dotenv from "dotenv";
+import { getConfig } from "../config/config.js";
 import jwt from "jsonwebtoken";
-
-dotenv.config();
 
 const generateTokens = (id) => {
   const accessToken = jwt.sign(
     { id, type: "access" },
-    process.env.ACCESS_TOKEN_SECRET,
+    getConfig.ACCESS_TOKEN_SECRET,
     { expiresIn: "2h" },
   );
 
   const refreshToken = jwt.sign(
     { id, type: "refresh" },
-    process.env.REFRESH_TOKEN_SECRET,
+    getConfig.REFRESH_TOKEN_SECRET,
     { expiresIn: "30d" },
   );
 
@@ -24,7 +22,7 @@ const generateTokens = (id) => {
 };
 
 const googleClient = new OAuth2Client({
-  clientId: process.env.GOOGLE_CLIENT_ID,
+  clientId: getConfig.GOOGLE_CLIENT_ID,
 });
 async function verifyGoogleToken(idToken) {
   const logging = {};
@@ -33,7 +31,7 @@ async function verifyGoogleToken(idToken) {
     logging.started = true;
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: getConfig.GOOGLE_CLIENT_ID,
     });
 
     logging.ticket = ticket;
@@ -55,14 +53,20 @@ async function verifyGoogleToken(idToken) {
 }
 
 async function verifyAppleToken(identityToken) {
+  const logger = {};
   try {
+    logger.identityToken = identityToken;
     const decoded = await appleSignin.verifyIdToken(identityToken, {
-      audience: process.env.APPLE_CLIENT_ID,
+      audience: getConfig.APPLE_CLIENT_ID,
       ignoreExpiration: true,
     });
+    logger.decoded = decoded;
     return decoded;
   } catch (error) {
+    logger.error = error;
     throw new Error("Invalid Apple token");
+  } finally {
+    Logger.debug("verifyAppleToken", logger);
   }
 }
 
@@ -168,7 +172,7 @@ async function refreshAccessToken(req, res) {
 
     jwt.verify(
       refreshToken,
-      process.env.REFRESH_TOKEN_SECRET,
+      getConfig.REFRESH_TOKEN_SECRET,
       async (err, decoded) => {
         try {
           if (err) {
@@ -220,7 +224,10 @@ async function logout(req, res) {
 }
 
 async function updateUser(req, res) {
+  const logger = {};
   try {
+    logger.user = req.user;
+    logger.reqParams = req.body;
     await User.findByIdAndUpdate(
       req.user.id,
       { $set: req.body },
@@ -231,7 +238,10 @@ async function updateUser(req, res) {
       success: true,
     });
   } catch (error) {
+    logger.error = error;
     res.status(500).json({ error: error.message });
+  } finally {
+    Logger.debug("updateUser", logger);
   }
 }
 

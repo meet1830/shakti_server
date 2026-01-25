@@ -9,6 +9,7 @@ import ConnectMongoDBSession from "connect-mongodb-session";
 import Order from "../models/order.js";
 import Product from "../models/product.js";
 import User from "../models/user.js";
+import { getConfig } from "./config.js";
 import session from "express-session";
 
 AdminJS.registerAdapter(AdminJSMongoose);
@@ -54,7 +55,7 @@ export const buildAdminJS = async (app) => {
 
   const MongoDBStore = ConnectMongoDBSession(session);
   const sessionStore = new MongoDBStore({
-    uri: process.env.MONGO_URI,
+    uri: getConfig.MONGO_URI,
     collection: "sessions",
   });
 
@@ -63,20 +64,20 @@ export const buildAdminJS = async (app) => {
     {
       authenticate,
       cookieName: "adminjs",
-      cookiePassword: process.env.COOKIE_PASSWORD,
+      cookiePassword: getConfig.COOKIE_PASSWORD,
     },
     null,
     {
       store: sessionStore,
       resave: true,
       saveUninitialized: true,
-      secret: process.env.COOKIE_PASSWORD,
+      secret: getConfig.COOKIE_PASSWORD,
       cookie: {
-        httpOnly: process.env.NODE_ENV === "production",
-        secure: process.env.NODE_ENV === "production",
+        httpOnly: getConfig.NODE_ENV === "production",
+        secure: getConfig.NODE_ENV === "production",
       },
       name: "adminjs",
-    }
+    },
   );
 
   app.use(admin.options.rootPath, adminRouter);

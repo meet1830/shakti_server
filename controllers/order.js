@@ -1,11 +1,14 @@
 import { formatOrderMessageHTML, sendTelegramMessage } from "../utils/index.js";
 
+import { Logger } from "../utils/logger.js";
 import Order from "../models/order.js";
 import User from "../models/user.js";
 
 const createOrder = async (req, res) => {
+  const logger = {};
   try {
     const { cartItems } = req.body;
+    logger.reqParams = req.body;
 
     let areCartItemsParamsValid = true;
     let orderPrice = 0;
@@ -16,6 +19,7 @@ const createOrder = async (req, res) => {
       }
     });
 
+    logger.areCartItemsParamsValid = areCartItemsParamsValid;
     if (!cartItems?.length || !areCartItemsParamsValid) {
       return res.status(400).json({
         success: false,
@@ -24,6 +28,7 @@ const createOrder = async (req, res) => {
     }
 
     const user = await User.findById(req.user.id);
+    logger.user = user;
 
     if (!user) {
       return res.status(404).json({
@@ -41,14 +46,18 @@ const createOrder = async (req, res) => {
       status: "Order placed",
       orderPrice,
     });
+    logger.order = order;
 
     const userAddress = user.address[0];
     const subtotal = cartItems.reduce((acc, item) => {
-      return acc + ((item?.price || 0) * (item?.quantity || 0));
+      return acc + (item?.price || 0) * (item?.quantity || 0);
     }, 0);
     const deliveryFee = (subtotal || 0) < 50000 ? 7000 : 0;
 
-    await sendTelegramMessage(
+    logger.subtotal = subtotal;
+    logger.deliveryFree = deliveryFee;
+
+    sendTelegramMessage(
       formatOrderMessageHTML({
         orderId: order?._id,
         user: {
@@ -60,7 +69,7 @@ const createOrder = async (req, res) => {
         deliveryFee: deliveryFee,
         total: subtotal + deliveryFee,
         items: cartItems,
-      })
+      }),
     );
 
     res.status(200).json({
@@ -68,16 +77,26 @@ const createOrder = async (req, res) => {
       order: order,
     });
   } catch (error) {
+    logger.error = error;
     res.status(500).json({
       success: false,
       message: "Failed to create order",
       error: error.message,
     });
+  } finally {
+    Logger.debug("createOrder", logger);
   }
 };
 
 const getOrders = async (req, res) => {
   try {
+    if (!req?.user?.id) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     const orders = await Order.find({ user: req.user.id }).sort({
       createdAt: -1,
     });
@@ -87,6 +106,7 @@ const getOrders = async (req, res) => {
         message: "No orders found",
       });
     }
+
     res.status(200).json({
       success: true,
       orders,

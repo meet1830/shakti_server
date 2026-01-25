@@ -1,17 +1,15 @@
 import { categoriesData, productData } from "./seedData.js";
-import mongoose, { Types } from "mongoose";
 
 import Category from "./models/category.js";
 import Product from "./models/product.js";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { getConfig } from "./config/config.js";
+import mongoose from "mongoose";
 
 // "postinstall": "node seedScript",
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(getConfig.MONGO_URI);
 
     await Product.deleteMany({});
     await Category.deleteMany({});
@@ -29,7 +27,7 @@ async function seedDatabase() {
     }));
 
     await Product.insertMany(productWithCategoryIds);
-    console.log('DB seeded successfully');
+    console.log("DB seeded successfully");
   } catch (error) {
     console.log("error seeding database", error);
   } finally {

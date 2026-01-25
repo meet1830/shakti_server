@@ -1,3 +1,4 @@
+import { getConfig } from "../config/config.js";
 import jwt from "jsonwebtoken";
 
 function verifyAccessToken(req, res, next) {
@@ -8,7 +9,7 @@ function verifyAccessToken(req, res, next) {
     return res.status(401).json({ error: "Access token required" });
   }
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+  jwt.verify(token, getConfig.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
       if (err.name === "TokenExpiredError") {
         return res.status(401).json({ error: "Token expired" });
