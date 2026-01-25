@@ -6,11 +6,11 @@ const UserSchema = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   refreshToken: { type: String, required: true },
-  phone: { type: String },
+  phone: { type: String, sparse: true },
   address: {
     type: [AddressSchema],
   },
-  appleId: { type: String },
+  appleId: { type: String, sparse: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

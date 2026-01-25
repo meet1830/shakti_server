@@ -45,13 +45,12 @@ async function verifyGoogleToken(idToken) {
     return {
       email: payload.email,
       name: payload.name,
-      id: payload.sub,
     };
   } catch (error) {
     logging.error = error;
     throw new Error(`Invalid Google token ${JSON.stringify(error)}`);
   } finally {
-    Logger.debug('verifyGoogleToken', logging);
+    Logger.debug("verifyGoogleToken", logging);
   }
 }
 
@@ -150,7 +149,7 @@ const loginOrSignup = async (req, res) => {
     res.status(500).json({ error: error.message });
     logging.error = error;
   } finally {
-    Logger.debug('loginOrSignup', logging);
+    Logger.debug("loginOrSignup", logging);
   }
 };
 
