@@ -4,6 +4,7 @@ dotenv.config();
 
 export const getConfig = {
   PORT: process.env.PORT || 3001,
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || "http://localhost:3000",
   MONGO_URI: process.env.MONGO_URI,
   COOKIE_PASSWORD: process.env.COOKIE_PASSWORD,
   NODE_ENV: process.env.NODE_ENV,
