@@ -26,4 +26,14 @@ function verifyAccessToken(req, res, next) {
   });
 }
 
-export { verifyAccessToken };
+function verifyAdmin(req, res, next) {
+  verifyAccessToken(req, res, () => {
+    if (req.user && req.user.role && req.user.role.includes("admin")) {
+      next();
+    } else {
+      res.status(403).json({ error: "Access denied. Admin role required." });
+    }
+  });
+}
+
+export { verifyAccessToken, verifyAdmin };

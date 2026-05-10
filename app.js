@@ -1,4 +1,4 @@
-import { buildAdminJS } from "./config/setup.js";
+
 import categoryRoutes from "./routes/category.js";
 import connectDB from "./config/connect.js";
 import constantRoutes from "./routes/constant.js";
@@ -18,7 +18,7 @@ app.use(helmet());
 app.use(
   cors({
     // origin: process.env.ALLOWED_ORIGINS?.split(",") || "*",
-    origin: "http://localhost:2000",
+    origin: "http://localhost:3000",
     credentials: true,
   }),
 );
@@ -35,6 +35,13 @@ app.use(limiter);
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  if (!req.headers.source) {
+    return res.status(403).json({ error: "request not allowed" });
+  }
+  next();
+});
+
 // Routes
 app.use("/user", userRoutes);
 app.use("/category", categoryRoutes);
@@ -43,14 +50,6 @@ app.use("/order", orderRoutes);
 app.use("/constants", constantRoutes);
 app.use("/health", healthRoutes);
 
-// for admin js
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
-  );
-  next();
-});
 
 // Error handling middleware - should be last middleware
 app.use((err, req, res, next) => {
@@ -64,14 +63,12 @@ const start = async () => {
       .then(() => console.log("DB connected"))
       .catch((error) => console.log("DB connection error", error));
 
-    // await buildAdminJS(app);
 
     app.listen({ port: getConfig.PORT, host: "0.0.0.0" }, (err, addr) => {
       if (err) {
         console.log(err);
       } else {
         console.log(`Server started on http://localhost:${getConfig.PORT}`);
-        // console.log(`Server started on http://localhost:${PORT}/admin`);
       }
     });
   } catch (error) {

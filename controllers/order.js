@@ -11,9 +11,9 @@ const createOrder = async (req, res) => {
     logger.reqParams = req.body;
 
     let areCartItemsParamsValid = true;
-    let orderPrice = 0;
+    let orderSubtotal= 0;
     cartItems?.forEach?.((item) => {
-      orderPrice += item?.price || 0;
+      orderSubtotal += (item?.price || 0) * (item?.quantity || 1);
       if (!item?._id || !item?.price || !item?.quantity) {
         areCartItemsParamsValid = false;
       }
@@ -44,7 +44,7 @@ const createOrder = async (req, res) => {
       address: user.address[0],
       phone: user.phone,
       status: "Order placed",
-      orderPrice,
+      orderPrice: orderSubtotal,
     });
     logger.order = order;
 
@@ -120,4 +120,116 @@ const getOrders = async (req, res) => {
   }
 };
 
-export { createOrder, getOrders };
+const getAdminOrdersSummary = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Today's orders to be delivered (any date with status "Order placed")
+    // Using aggregation for better performance and following the instruction to use orderPrice field
+    const summary = await Order.aggregate([
+      { $match: { status: "Order placed" } },
+      {
+        $group: {
+          _id: null,
+          totalPrice: { $sum: "$orderPrice" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const pendingTotal = summary.length > 0 ? summary[0].totalPrice : 0;
+    const pendingCount = summary.length > 0 ? summary[0].count : 0;
+
+    res.status(200).json({
+      success: true,
+      pendingTotal,
+      pendingCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve order summary",
+      error: error.message,
+    });
+  }
+};
+
+const getAdminCurrentOrdersItemsSummary = async (req, res) => {
+  try {
+    const orders = await Order.find({ status: "Order placed" });
+    const itemsMap = {};
+
+    orders.forEach((order) => {
+      order.orderItems.forEach((item) => {
+        // Group by name and weight to ensure uniqueness for aggregation
+        const key = `${item.name}-${item.weight}`;
+        if (!itemsMap[key]) {
+          itemsMap[key] = {
+            ...item.toObject(),
+            totalQuantity: 0,
+            totalPrice: 0,
+          };
+        }
+        itemsMap[key].totalQuantity += item.quantity;
+        itemsMap[key].totalPrice += item.price * item.quantity;
+      });
+    });
+
+    const summary = Object.values(itemsMap);
+    res.status(200).json({
+      success: true,
+      summary,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve order items summary",
+      error: error.message,
+    });
+  }
+};
+
+const getAdminOrders = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = page * limit;
+
+    const { status } = req.query;
+    const query = {};
+    if (status) {
+      query.status = status;
+    }
+
+    const orders = await Order.find(query)
+      .populate("user", "name email phone address")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalCount = await Order.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      orders,
+      totalCount,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve orders",
+      error: error.message,
+    });
+  }
+};
+
+export {
+  createOrder,
+  getOrders,
+  getAdminOrdersSummary,
+  getAdminCurrentOrdersItemsSummary,
+  getAdminOrders,
+};
