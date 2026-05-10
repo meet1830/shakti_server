@@ -226,10 +226,57 @@ const getAdminOrders = async (req, res) => {
   }
 };
 
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { orderId, status } = req.body;
+
+    if (!orderId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "Order ID and status are required",
+      });
+    }
+
+    const validStatuses = ["Order placed", "Delivered", "Cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status value",
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated successfully",
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order status",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createOrder,
   getOrders,
   getAdminOrdersSummary,
   getAdminCurrentOrdersItemsSummary,
   getAdminOrders,
+  updateOrderStatus,
 };

@@ -4,6 +4,7 @@ import {
   getAdminOrdersSummary,
   getAdminOrders,
   getOrders,
+  updateOrderStatus,
 } from "../controllers/order.js";
 
 import express from "express";
@@ -18,5 +19,6 @@ router.get("/", verifyAccessToken, getOrders);
 router.get("/admin/summary", verifyAdmin, getAdminOrdersSummary);
 router.get("/admin/items-summary", verifyAdmin, getAdminCurrentOrdersItemsSummary);
 router.get("/admin/orders", verifyAdmin, getAdminOrders);
+router.patch("/admin/status", verifyAdmin, updateOrderStatus);
 
 export default router;
